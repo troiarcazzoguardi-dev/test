@@ -1,0 +1,8 @@
+CLANG=clang
+
+all:
+	$(CLANG) -O2 -Wall src/hpingx.c -o hpingx -lpthread -lbpf -lelf
+	$(CLANG) -O2 -target bpf -c src/xdp_tx_kern.c -o xdp_tx_kern.o
+
+clean:
+	rm -f hpingx xdp_tx_kern.o
