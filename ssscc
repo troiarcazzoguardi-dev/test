@@ -1,14 +1,269 @@
-# Terminal corrente: LASCIALO CORRERE (infinite waves)
+┌──(test)─(root㉿kali)-[~/ghostmixer]
+└─# torsocks curl -s "http://118.107.4.167:3001/api/swap/quota/today" | jq .
 
-# NUOVO TERMINALE 1: Total monitor
-watch -n 10 '
-echo "=== GHOSTMIXER STATUS ==="
-torsocks curl -s "https://blockstream.info/api/address/bc1qwe2t927r4e2l43gqr0zln45zzlyvj3mw0wd4fx" | jq -r ".chain_stats | \"TOTAL: \(.funded_txo_sum) sats | TX: \(.tx_count)\"";
-echo "TOR IP: $(torsocks curl -s icanhazip.com)";
-echo "Split ready: $(wc -l < split.txt) wallets"
-'
+{
+  "success": true,
+  "data": {
+    "date": "2026-01-01",
+    "total": 218719.8599,
+    "used": 0,
+    "available": 218719.8599,
+    "percentage": "0.00",
+    "source": "initial",
+    "source_description": "初始30万USD额度",
+    "initial_remaining": 218719.85989999998
+  }
+}
+                                                                    
+┌──(test)─(root㉿kali)-[~/ghostmixer]
+└─# torsocks curl -s "http://118.107.4.167:3001/api/swap/quota/initial" | jq .
+{
+  "success": true,
+  "data": {
+    "total": 300000,
+    "used": 81280.1401,
+    "remaining": 218719.85989999998,
+    "is_exhausted": false,
+    "percentage": "27.09"
+  }
+}
+                                                                    
+┌──(test)─(root㉿kali)-[~/ghostmixer]
+└─# torsocks curl -s "http://118.107.4.167:3001/api/swap/rate" | jq .
+{
+  "success": true,
+  "data": {
+    "from_token": "HCF",
+    "to_token": "BSD",
+    "rate": 0.4328
+  }
+}
+                                                                    
+┌──(test)─(root㉿kali)-[~/ghostmixer]
+└─# TARGET="0x1f3f06d37bc48d5f191601ea0f4294301832cf4a"
+torsocks curl -s "http://118.107.4.167:3001/api/balance/$TARGET" | jq .
+{
+  "success": true,
+  "data": {
+    "BSD": {
+      "balance": 0,
+      "locked": 0,
+      "available": 0
+    },
+    "BSDT": {
+      "mining": 9.618,
+      "quant": 0,
+      "referral": 0,
+      "total": 9.618,
+      "locked": 0
+    },
+    "DKJ": {
+      "balance": 17.34095156,
+      "total_earned": 19.8904,
+      "total_spent": 2.54944844
+    }
+  }
+}
+                                                                    
+┌──(test)─(root㉿kali)-[~/ghostmixer]
+└─# torsocks curl -s "http://118.107.4.167:3001/api/mining/configs" | jq .
 
-# NUOVO TERMINALE 2: ETH monitor  
-watch -n 30 '
-curl -s "https://api.etherscan.io/api?module=account&action=balance&address=0x3f0fF10069c1B36e255F23f1CfD0cE35bE9F0936" | jq -r ".result // 0"
-'
+{
+  "success": true,
+  "data": {
+    "0": {
+      "name": "体验机",
+      "price": 200,
+      "days": 30,
+      "dailyOutput": 7.46,
+      "totalOutput": 224,
+      "maxGen": 1
+    },
+    "1": {
+      "name": "1号机",
+      "price": 500,
+      "days": 30,
+      "dailyOutput": 18.66,
+      "totalOutput": 560,
+      "maxGen": 3
+    },
+    "2": {
+      "name": "2号机",
+      "price": 2000,
+      "days": 30,
+      "dailyOutput": 76.66,
+      "totalOutput": 2300,
+      "maxGen": 6
+    },
+    "3": {
+      "name": "3号机",
+      "price": 5000,
+      "days": 30,
+      "dailyOutput": 196.66,
+      "totalOutput": 5900,
+      "maxGen": 9
+    },
+    "4": {
+      "name": "4号机",
+      "price": 20000,
+      "days": 30,
+      "dailyOutput": 806.66,
+      "totalOutput": 24200,
+      "maxGen": 9
+    },
+    "5": {
+      "name": "5号机",
+      "price": 50000,
+      "days": 60,
+      "dailyOutput": 1041.66,
+      "totalOutput": 62500,
+      "maxGen": 9
+    },
+    "6": {
+      "name": "6号机",
+      "price": 100000,
+      "days": 90,
+      "dailyOutput": 1444.44,
+      "totalOutput": 130000,
+      "maxGen": 9
+    },
+    "7": {
+      "name": "7号机",
+      "price": 200000,
+      "days": 120,
+      "dailyOutput": 2166.66,
+      "totalOutput": 260000,
+      "maxGen": 9
+    },
+    "8": {
+      "name": "8号机",
+      "price": 500000,
+      "days": 150,
+      "dailyOutput": 4333.33,
+      "totalOutput": 650000,
+      "maxGen": 9
+    }
+  }
+}
+                                                                    
+┌──(test)─(root㉿kali)-[~/ghostmixer]
+└─# torsocks curl -s "http://118.107.4.167:3001/api/quant/configs" | jq .
+{
+  "success": false,
+  "error": "quantMachineService.getQuantConfigs is not a function"
+}
+                                                                    
+┌──(test)─(root㉿kali)-[~/ghostmixer]
+└─# torsocks curl -s "http://118.107.4.167:3001/api/withdraw/history/$TARGET" | jq .
+{
+  "success": true,
+  "data": [
+    {
+      "id": 266,
+      "withdraw_type": "MINING",
+      "withdraw_amount": "15.00000000",
+      "dkj_fee": "0.45000000",
+      "fee_percentage": "3.00",
+      "to_address": "0xc8dc9df998c02319c753c93f77653cb5d85d1131",
+      "tx_hash": "0x6e3a635c8c0212cb11c6fbda03e4cbcd7b1bfd4ed941a1de640f268bd66d3715",                                                  
+      "status": "SUCCESS",
+      "error_message": null,
+      "created_at": "2025-11-26T14:02:58.000Z",
+      "completed_at": "2025-11-26T14:03:02.000Z"
+    },
+    {
+      "id": 162,
+      "withdraw_type": "MINING",
+      "withdraw_amount": "69.98161468",
+      "dkj_fee": "2.09944844",
+      "fee_percentage": "3.00",
+      "to_address": "0x1f3f06d37bc48d5f191601ea0f4294301832cf4a",
+      "tx_hash": "0xfe3bc086d348bbb5fbb75a830c1a49e39d3f1ebc762d41189ed6c84f4aa78e76",                                                  
+      "status": "SUCCESS",
+      "error_message": null,
+      "created_at": "2025-11-25T08:56:39.000Z",
+      "completed_at": "2025-11-25T08:56:44.000Z"
+    }
+  ]
+}
+                                                                    
+┌──(test)─(root㉿kali)-[~/ghostmixer]
+└─# torsocks curl -s "http://118.107.4.167:3001/api/swap/history/$TARGET" | jq .
+{
+  "success": true,
+  "data": []
+} 
+
+
+torsocks curl -s -H "Content-Type: application/json" "http://118.107.4.167:3001/" | jq .
+{
+  "service": "HCF-BSD Mining System Backend API",
+  "version": "1.0.0",
+  "endpoints": {
+    "balance": {
+      "init": "POST /api/balance/init",
+      "query": "GET /api/balance/:wallet_address"
+    },
+    "swap": {
+      "swapHCF": "POST /api/swap/hcf-to-bsd",
+      "swapSOF": "POST /api/swap/sof-to-bsd",
+      "swapSOT": "POST /api/swap/sot-to-bsd",
+      "quotaToday": "GET /api/swap/quota/today",
+      "quotaInitial": "GET /api/swap/quota/initial",
+      "nodeRewardPool": "GET /api/swap/node-reward-pool",
+      "history": "GET /api/swap/history/:wallet_address",
+      "rate": "GET /api/swap/rate",
+      "setRate": "POST /api/swap/admin/set-rate"
+    },
+    "dkj": {
+      "swapSOTtoDKJ": "POST /api/dkj/sot-to-dkj",
+      "balance": "GET /api/dkj/balance/:wallet_address",
+      "swapHistory": "GET /api/dkj/swap-history/:wallet_address",
+      "consumptionHistory": "GET /api/dkj/consumption-history/:wallet_address",                                                         
+      "marketingPending": "GET /api/dkj/marketing-pending",
+      "rate": "GET /api/dkj/rate"
+    },
+    "mining": {
+      "purchase": "POST /api/mining/purchase",
+      "list": "GET /api/mining/list/:wallet_address",
+      "active": "GET /api/mining/active/:wallet_address",
+      "configs": "GET /api/mining/configs"
+    },
+    "quant": {
+      "window": "GET /api/quant/window/:wallet",
+      "windowHistory": "GET /api/quant/window-history/:wallet",
+      "configs": "GET /api/quant/configs",
+      "purchase": "POST /api/quant/purchase",
+      "machines": "GET /api/quant/machines/:wallet",
+      "stats": "GET /api/quant/stats/:wallet",
+      "earnings": "GET /api/quant/earnings/:wallet",
+      "purchaseInfo": "GET /api/quant/purchase-info/:wallet"
+    },
+    "withdraw": {
+      "withdrawMining": "POST /api/withdraw/mining",
+      "withdrawQuant": "POST /api/withdraw/quant",
+      "withdrawReferral": "POST /api/withdraw/referral",
+      "record": "GET /api/withdraw/record/:withdraw_id",
+      "history": "GET /api/withdraw/history/:wallet_address",
+      "stats": "GET /api/withdraw/stats/:wallet_address",
+      "adminPending": "GET /api/withdraw/admin/pending",
+      "adminRetry": "POST /api/withdraw/admin/retry/:withdraw_id",
+      "adminCancel": "POST /api/withdraw/admin/cancel/:withdraw_id"
+    },
+    "referral": {
+      "rewards": "GET /api/referral/rewards/:wallet_address",
+      "team": "GET /api/referral/team/:wallet_address",
+      "stats": "GET /api/referral/stats/:wallet_address",
+      "upline": "GET /api/referral/upline/:wallet_address",
+      "teamMembers": "GET /api/referral/team/members/:wallet_address"                                                                   
+    },
+    "admin": {
+      "extendMachine": "POST /api/admin/machine/extend",
+      "extendUserMachines": "POST /api/admin/user/extend-machines",
+      "blockWithdraw": "POST /api/admin/withdraw/block",
+      "unblockWithdraw": "POST /api/admin/withdraw/unblock",
+      "blockedUsers": "GET /api/admin/withdraw/blocked-users",
+      "userMachines": "GET /api/admin/user/machines"
+    }
+  }
+}
