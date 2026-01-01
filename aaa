@@ -1,0 +1,17 @@
+#!/bin/bash
+# install.sh - FULL SETUP 3 MIN
+sudo apt update && sudo apt install -y tor python3-pip nodejs npm git curl build-essential libssl-dev tor torsocks bc jq
+sudo systemctl enable --now tor
+
+# Python
+pip3 install web3 eth-account pycoin requests[socks5] cryptography py-solc-x py-ecc
+
+# Foundry (ETH)
+curl -L https://foundry.paradigm.xyz | bash && . $HOME/.bashrc && foundryup
+
+# Node
+npm i -g ethers @openzeppelin/contracts snarkjs
+
+mkdir -p ~/ghostmixer && cd ~/ghostmixer
+chmod +x *.sh
+echo "✅ SETUP COMPLETO"
