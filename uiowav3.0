@@ -162,7 +162,7 @@ chaos_pumps() {
 chaos_temp() {
     echo "🌡️ HVAC MAX_SUSTAINED 48°C + 98% heat"
     for dev in "${HVAC[@]}" "${HEAT[@]}"; do
-        rotate_torsocks "${BASE}${dev}/if/device/0/nv_Temperature" "48"
+        rotate_torsocks "${BASE}${dev}/if/device/0/nv_Temperature" "90"
         rotate_torsocks "${BASE}${dev}/if/device/0/nv_HeatDemand" "98"
         rotate_torsocks "${BASE}${dev}/if/device/0/nv_FanSpeed" "100"
     done
