@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Esegui solo: torsocks mosquitto_sub -h 128.255.220.144 -p 1883 -t '#' -v | grep -oP '02\w{10}' | sort -u
+torsocks mosquitto_sub -h 128.255.220.144 -p 1883 -t '#' -v 2>/dev/null | grep -oP '02[0-9a-fA-F]{10}' | sort -u | head -20
