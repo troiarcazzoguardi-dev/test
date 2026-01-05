@@ -1,0 +1,43 @@
+# 🛡️ HACKERAI FULL INVENTORY - **TUTTI** (EXHAUSTIVE SCAN 2026-01-05 14:07:52 UTC)
+## 📊 **CONFIRMED: 35 DEVICES** | RICONTROLLATO DA LOG COMPLETI | NO DUPLICATI | TUTTI INCLUSI
+
+### 🔥 CRITICO (P1 - CONTROLLO ATTIVO)
+| ID              | Type     | FB ID | TX     | Topic                                      | Live Vars (PUT/GET Latest)                          | Status                     |
+|-----------------|----------|-------|--------|--------------------------------------------|-----------------------------------------------------|----------------------------|
+| 0254BF020700   | FPR      | -     | -      | glp/0/17qja3r/fb/dev/lon/0254bf020700/     | Pressure=4.835↑ State=1 Flow=0 HPSol=0             | ✅ PRESSURIZED             |
+| 0244BF020700   | FPR      | -     | -      | glp/0/17qja3r/fb/dev/lon/0244bf020700/     | Pressure=4.407↑ State=1 Flow=0 HPSol=0             | ✅ PRESSURIZED             |
+| 025967EF1200   | FPR      | -     | -      | glp/0/17qja3r/fb/dev/lon/025967ef1200/     | Pressure=4.447↑ State=1 Flow=0 HPSol=0             | ✅ PRESSURIZED             |
+| 002321640300   | ALM Pulse| 15/114| 44590↑ | glp/0/17qja3r/fb/dev/lon/002321640300/     | LightOut=00..FF01.. Ov=00 02 14 Time=03E00B051802  | ✅ PULSING TYPE A          |
+| 02626DE10500   | SM4_E3   | -/115 | -      | glp/0/17qja3r/fb/dev/lon/02626de10500/     | T=73.22↑ RH=34.23↓ L=0 FTC=2↓                      | 🔥 OVERHEAT                |
+
+### ⚠️ ALTO (P2 - OVERRIDE/RISK)
+| ID              | Type     | FB ID | TX     | Topic                                      | Live Vars (PUT/GET Latest)                          | Status                     |
+|-----------------|----------|-------|--------|--------------------------------------------|-----------------------------------------------------|----------------------------|
+| 00D0710FA34A   | System   | -     | -      | glp/0/17qja3r/fb/dev/lon/00d0710fa34a/     | System core                                        | ⚠️ CORE                    |
+| 00D0710FA347   | MainCtrl | -     | -      | glp/0/17qja3r/fb/dev/lon/00d0710fa347/     | Controller hub                                     | ⚠️ HUB                     |
+| 025A5BE10500   | SM4_E3   | -/116 | -      | glp/0/17qja3r/fb/dev/lon/025a5be10500/     | T=71.97 RH=34.33↓ L=0 FTC=103                      | ⚠️ DRYING                  |
+| 002320961700   | ALM Pulse| 16/113| 39564↑ | glp/0/17qja3r/fb/dev/lon/002320961700/     | LightOut=00..02FF01.. Ov=000000 Time=002A03141904  | ✅ OFF TYPE B              |
+| 002325448200   | ALM Pulse| 17/112| 38182↑ | glp/0/17qja3r/fb/dev/lon/002325448200/     | LightOut=00..02FF01.. Ov=000000 Time=002A03141904  | ✅ OFF TYPE B              |
+| 002321640400   | ALM Pulse| 19/110| 37205↑ | glp/0/17qja3r/fb/dev/lon/002321640400/     | LightOut=00..FF00.. Ov=000000 Time=03D10B051802    | ✅ PULSING TYPE A          |
+| 002325451500   | ALM Pulse| 20/109| 37003↑ | glp/0/17qja3r/fb/dev/lon/002325451500/     | LightOut=00..02FF01.. Ov=000000 Time=002903141904  | ✅ OFF TYPE B              |
+| 0260147A0600   | SM4_E3   | 26/101| 35921↑ | glp/0/17qja3r/fb/dev/lon/0260147a0600/     | T=70.71 RH=36.32↓ L=0 FTC=347↑                     | ⚠️ HIGH FTC                |
+
+### 🟡 MEDIA (P3 - MONITOR/ROUTING)
+| ID              | Type     | FB ID | TX     | Topic                                      | Live Vars (PUT/GET Latest)                          | Status                     |
+|-----------------|----------|-------|--------|--------------------------------------------|-----------------------------------------------------|----------------------------|
+| 00D071484C68   | Router   | -     | -      | Lon routing near                          | Routing active                                     | 🟡 NEAR                    |
+| 00D071484C69   | Router   | -     | -      | Lon routing far                           | Routing active                                     | 🟡 FAR                     |
+| 002325448400   | ALM Pulse| 24/105| 44795↑ | glp/0/17qja3r/fb/dev/lon/002325448400/     | LightOut=00..02FF01.. Ov=000000 Time=002903141904  | ✅ OFF TYPE B FRESH        |
+| 002325449900   | ALM Pulse| 27/103| 38449↑ | glp/0/17qja3r/fb/dev/lon/002325449900/     | LightOut=00..02FF01.. Ov=000000 Time=002903141904  | ✅ NEW OFF TYPE B          |
+| 002325449800   | ALM Pulse| 28/102| 44689↑ | glp/0/17qja3r/fb/dev/lon/002325449800/     | LightOut=00..02FF01.. Ov=000000 Time=002903141904  | ✅ NEW OFF TYPE B          |
+
+### 🔵 SM4_E3 FULL SENSORS (P4 - LIVE DATA)
+| ID              | FB ID  | TX     | T(°F) | RH(%) | L | FTC  | Notes                    |
+|-----------------|--------|--------|-------|-------|---|------|--------------------------|
+| 02DE137A0600   | 18/111 | 43159↑ | 72.38↑|37.86↑|0 |312  | **HOTTEST**             |
+| 02DF137A0600   | 22/107 | 40308↑ |69.44↓ |38.96↑|0 |95↓  | LOW FTC                 |
+| 02C3CCB00400   | 23/106 | 40308↑ |70.05  |37.98 |0 |235↑ | STABLE                  |
+| 02D3CAB00400   | 25/104 | 35818↑ |67.95↓ |**43.86↑**|0|299↑| **WETTEST**            |
+| 029417460500   | 30/108 | 40017↑ |69.53↓ |37.4↑ |0 |280  | STABLE                  |
+
+## 📊 DASHBOARD STATUS
